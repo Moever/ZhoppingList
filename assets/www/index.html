@@ -1,0 +1,255 @@
+<!DOCTYPE html> 
+<html> 
+	<head> 
+	<title>My Page</title> 
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+	
+	
+	<script type="text/javascript" src="scripts/cordova-1.7.0.js"></script>
+	<script type="text/javascript" charset="utf-8" src="scripts/pg-plugin-fb-connect.js"></script>
+	<script type="text/javascript" charset="utf-8" src="scripts/cdv-plugin-fb-connect.js"></script>
+	<script type="text/javascript" charset="utf-8" src="scripts/facebook_js_sdk.js"></script>
+				
+	
+	<script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>	
+	<script type="text/javascript" src="http://code.jquery.com/mobile/1.0/jquery.mobile-1.0.min.js"></script>	
+	<script type="text/javascript" src="scripts/knockout-2.0.0.js"></script>
+		
+	
+	<script type="text/javascript" src="scripts/ShoppingListClient.js"></script>
+	<script type="text/javascript" src="scripts/ZisoAuthentication.js"></script>
+	
+	<script type="text/javascript" charset="utf-8">
+    	document.addEventListener("deviceready", onDeviceReady, false);   	
+           
+        $( document ).bind( "mobileinit", function() {
+	    // Make your jQuery Mobile framework configuration changes here!
+	
+	    $.mobile.allowCrossDomainPages = true;
+	});
+            
+		if ((typeof cordova == 'undefined') && (typeof Cordova == 'undefined')) alert('Cordova variable does not exist. Check that you have included cordova.js correctly');
+        if (typeof CDV == 'undefined') alert('CDV variable does not exist. Check that you have included cdv-plugin-fb-connect.js correctly');
+        if (typeof FB == 'undefined') alert('FB variable does not exist. Check that you have included the Facebook JS SDK file.');
+             	
+    
+    	function onDeviceReady() {
+			ko.applyBindings(new ZisoAuthModel());
+					
+						
+			FB.init({ appId: "404249192933108", nativeInterface: CDV.FB });   
+			
+			
+                         			
+			FB.getLoginStatus(function(response) {				
+				if (response.status == 'connected') {	
+					self.requestsLists();			
+					
+						/*
+						$.mobile.changePage( "#listManager", {
+							transition: "none",
+							reverse: false
+							
+						} ); */
+					
+					}
+					else {
+						$.mobile.changePage( "#nocredentials" );
+					} 
+				} 
+			);			
+    	}    
+    
+    	function goto(screen){
+    		
+    		if (screen == "share"){    	
+    			alert(self.people().length);
+    			 if (self.people().length > 0){
+     					$.mobile.changePage( "#shareList", {
+									transition: "none"
+									}  );
+    			}
+    			else {    			
+	    		
+	    			FBLoadFriends();    			    		
+	    			$.mobile.showPageLoadingMsg("b", "This is only a test", true);
+    			}   			
+    		}
+    		
+    		if (screen == "home") {
+    			self.requestsLists();		
+    		}
+    		
+    		if (screen == "listManager"){    		
+    			$.mobile.showPageLoadingMsg("b", "This is only a test", true);
+    			$.mobile.changePage("#listManager");
+    			$("#shoppinglist").listview('refresh');
+    			$("#myListSelection").listview('refresh');
+    		}
+    		
+    	}
+    
+    </script>
+	
+	
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.0/jquery.mobile-1.0.min.css" />
+	<link rel="stylesheet" href="media/ziso.net.default.css" />
+</head> 
+<body> 
+
+<div data-role="page" id="bootup">
+	<div data-role="content">
+		Laden...
+	</div>
+</div>
+
+
+<div data-role="page" id="nocredentials">
+	<div data-role="header">
+		<h1>Login</h1>
+	</div>
+	<div data-role="content" align="center">
+	
+		<img src="media/facebook-connect.jpg" data-bind="click: FBlogin" />
+		
+		<p class="explanation">We only support Facebook connect at this time.</p>		
+		
+		<!--		
+		<div id="existingUser">
+            <h3>Existing user</h3>            
+            <span class="label">Username</span> <input data-bind="value: exiUserName" style="width:259px" />
+            <span class="label">Password</span> <input type="password" data-bind="value: exiPwd"  style="width:259px"/>
+            <input type="submit" value="Login" style="width:400px" data-bind="click: execLogin" />            
+        </div>
+
+        <div id="newUser">
+            <h3>New user</h3>
+            
+            <span class="label">Username</span>  <input data-bind="value: newUserName" style="width:259px" />
+            <span class="label">Password</span> <input type="password" data-bind="value: newPwd"  style="width:259px"/>
+            <span class="label">Email</span> <input data-bind="value: newEmail"  style="width:259px"/>
+            <input type="submit" value="Register" style="width:400px" data-bind="click: execRegistration" />
+            
+        </div>
+        -->
+		
+	</div>
+</div>
+
+<div data-role="page" id="home">
+	<div data-role="header">
+		<h1>Uw lijstjes</h1>
+		
+		<a href="#" onClick="refreshLists();" data-icon="refresh" class="ui-btn-right">Ververs</a>
+	</div>
+	
+	<script type="text/html" id="person-template">
+   		<span data-bind="text: Name"></span>;<br /> 
+	</script>
+	
+	
+	<div data-role="content">
+		<div id="listPicker" style="display:none;">		         
+			<select data-bind="options: ShoppingListCollection, optionsText: 'Description', value:selectedShoppingList">
+			</select>	        
+		</div>
+				
+		<ul id="myListSelection" data-bind="foreach: ShoppingListCollection" data-role="listview">		 
+	    	<li data-bind="click: selectList">		
+	    		
+	    		<h3><span data-bind="text: Description"></span></h3>	    		
+	    		<p>
+	    		Deelnemers:	    		
+	    		<span data-bind="template: { name: 'person-template', foreach: Participants() }"></span>
+	    		
+	    		<p>
+	    	</li> 	    	
+		</ul>   		
+		
+	</div>
+	        
+	
+	
+	
+</div>
+
+<div data-role="page" id="shareList">
+	<div data-role="header">
+		<h1>Lijst delen</h1>		
+	</div>
+	<div data-role="content">
+		<style>
+			.containing-element .ui-slider-switch { width: 9em }
+		</style>		
+	
+		<ul  data-bind="foreach: people" data-role="listview" data-filter="true"> 
+	    	<li>
+	    		<img data-bind="attr: { src: image}" ></img>
+	    		<span data-bind="text: name, click: shareWithFriend"></span>
+	    		
+	    		<span >
+	    			<img src="media/check_mark.png" class="ui-li-icon" data-bind="visible: isShared">
+	    		</span>
+	    	</li> 
+	    	
+		</ul>     
+	</div>
+	
+	<div data-role="footer" data-id="foo1" data-position="fixed">
+		
+			<ul>
+				<li><a href="#listManager"  data-prefetch="true" class="ui-btn-active ui-state-persist" data-icon="home" data-iconpos="left">Klaar met delen</a></li>				
+			</ul>
+		
+	</div>
+		
+    
+    
+</div>
+
+</div>
+
+<div data-role="page" id="listManager">
+	<div data-role="header">
+		<h1><span data-bind="text: selectedShoppingList() ? selectedShoppingList().Description() : null"></span></h1>
+	</div>
+	<div data-role="content">	
+	
+		<div id="shoppingListEditor">	        
+	        <ul data-bind="foreach: selectedShoppingList() ? selectedShoppingList().ShoppingListItems() : null " id="shoppinglist" data-role="listview" data-inset="true">
+	        <li class="listItem" data-bind="event: { taphold : confirmRemove }" >
+	        	<span data-bind="text: Amount, click: toggleDone, css: { visualCheck: Done() == true }"></span>
+				<span data-bind="text: Description, click: toggleDone, css: { visualCheck: Done() == true }"></span>
+			</li>
+	        </ul>        
+	        
+	       
+	        
+	        <div id="newItemContainer">            
+	            
+	                <input data-bind="value: newTaskText" placeholder="Wat heb je nodig?" />
+	                <input type="number" data-bind="value: newAmount" placeholder="1" />
+	                <input type="submit" value="Toevoegen!" data-bind="click: addTask" />
+	            
+	        </div>
+	    </div>
+	</div>
+	
+	<div data-role="footer" data-id="foo1" data-position="fixed">
+		<div data-role="navbar">
+			<ul>
+				<li><a href="#home" data-prefetch="true" class="ui-btn-active ui-state-persist" data-icon="home" data-iconpos="left">Home</a></li>
+				<li><a href="#" onClick="goto('share');" data-prefetch="true" class="ui-btn-active ui-state-persist">Delen</a></li>
+				<li><a href="#" onClick="FBlogout();" data-prefetch="true" data-transition="slideup">Logout</a></li>
+			</ul>
+		</div><!-- /navbar -->
+	</div><!-- /footer --> 
+	
+
+
+</div>
+
+
+
+</body>
+</html>
